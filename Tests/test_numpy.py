@@ -75,7 +75,7 @@ def _test_img_equals_nparray(img, np):
 
 
 def test_16bit():
-    img = Image.open('Tests/images/12bit.cropped.tif')
+    img = Image.open('Tests/images/16bit.cropped.tif')
     np_img = numpy.array(img)
     _test_img_equals_nparray(img, np_img)
     assert_equal(np_img.dtype, numpy.dtype('<u2'))
@@ -105,4 +105,16 @@ def test_to_array():
 
     for mode in modes:
         assert_no_exception(lambda: _to_array(*mode))
+
+
+def test_point_lut():
+    # see https://github.com/python-imaging/Pillow/issues/439
+    
+    data = list(range(256))*3
+    lut = numpy.array(data, dtype='uint8')
+
+    im = lena()
+
+    assert_no_exception(lambda: im.point(lut))
+    
 

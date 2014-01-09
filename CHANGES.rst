@@ -1,8 +1,77 @@
 Changelog (Pillow)
 ==================
 
+2.4.0 (2014-04-01)
+------------------
+
+- Add arch support for pcc64, s390, s390x, armv7l, aarch64
+  [manisandro]
+
+- Add arch support for ppc
+  [wiredfool]
+
+- Correctly quote file names for WindowsViewer command
+  [cgohlke]
+
+- Prefer homebrew freetype over X11 freetype (but still allow both)
+  [dmckeone]
+
 2.3.0 (2014-01-01)
 ------------------
+
+- Stop leaking filename parameter passed to getfont
+  [jpharvey]
+
+- Report availability of LIBTIFF during setup and selftest
+  [cgohlke]
+
+- Fix msvc build error C1189: "No Target Architecture"
+  [cgohlke]
+
+- Fix memory leak in font_getsize
+  [wiredfool]
+
+- Correctly prioritize include and library paths
+  [ohanar]
+
+- Image.point fixes for numpy.array and docs
+  [wiredfool]
+
+- Save the transparency header by default for PNGs
+  [wiredfool]
+
+- Support for PNG tRNS header when converting from RGB->RGBA
+  [wiredfool]
+
+- PyQT5 Support
+  [wiredfool]
+
+- Updates for saving color tiffs w/compression using libtiff
+  [wiredfool]
+
+- 2gigapix image fixes and redux
+  [wiredfool]
+
+- Save arbitrary tags in Tiff image files
+  [wiredfool]
+
+- Quote filenames and title before using on command line
+  [tmccombs]
+
+- Fixed Viewer.show to return properly
+  [tmccombs]
+
+- Documentation fixes
+  [wiredfool]
+
+- Fixed memory leak saving images as webp when webpmux is available
+  [cezarsa]
+
+- Fix compiling with FreeType 2.5.1
+  [stromnov]
+
+- Adds directories for NetBSD.
+  [deepy]
 
 - Support RGBA TIFF with missing ExtraSamples tag
   [cgohlke]
@@ -45,6 +114,12 @@ Changelog (Pillow)
 
 - Fixes to make Pypy 2.1.0 work on Ubuntu 12.04/64
   [wiredfool]
+
+2.2.2 (2013-12-11)
+------------------
+
+- Fix #427: compiling with FreeType 2.5.1
+  [stromnov]
 
 2.2.1 (2013-10-02)
 ------------------

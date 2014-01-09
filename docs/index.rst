@@ -48,10 +48,10 @@ Financial
 ---------
 
 Pillow is a volunteer effort led by Alex Clark. If you can't help with
-development, please help us financially; your assistance is very much needed
-and appreciated!
+development please consider helping us financially. Your assistance would
+be very much appreciated!
 
-.. note:: Contributors: please add your name and donation preference here. 
+.. note:: Contributors please add your name and donation preference here. 
 
 ======================================= =======================================
 **Developer**                           **Preference**

@@ -475,7 +475,7 @@ class Image:
         new.mode = im.mode
         new.size = im.size
         new.palette = self.palette
-        if im.mode == "P":
+        if im.mode == "P" and not new.palette:
             from PIL import ImagePalette
             new.palette = ImagePalette.ImagePalette()
         try:
@@ -675,15 +675,18 @@ class Image:
 
             L = R * 299/1000 + G * 587/1000 + B * 114/1000
 
-        When translating a greyscale image into a bilevel image (mode
-        "1"), all non-zero values are set to 255 (white). To use other
-        thresholds, use the :py:meth:`~PIL.Image.Image.point` method.
+        The default method of converting a greyscale ("L") or "RGB"
+        image into a bilevel (mode "1") image uses Floyd-Steinberg
+        dither to approximate the original image luminosity levels. If
+        dither is NONE, all non-zero values are set to 255 (white). To
+        use other thresholds, use the :py:meth:`~PIL.Image.Image.point`
+        method.
 
         :param mode: The requested mode.
         :param matrix: An optional conversion matrix.  If given, this
            should be 4- or 16-tuple containing floating point values.
         :param dither: Dithering method, used when converting from
-           mode "RGB" to "P".
+           mode "RGB" to "P" or from "RGB" or "L" to "1".
            Available methods are NONE or FLOYDSTEINBERG (default).
         :param palette: Palette to use when converting from mode "RGB"
            to "P".  Available palettes are WEB or ADAPTIVE.
@@ -721,16 +724,10 @@ class Image:
         if dither is None:
             dither = FLOYDSTEINBERG
 
-        # fake a P-mode image, otherwise the transparency will get lost as there is
-        # currently no other way to convert transparency into an RGBA image
-        if self.mode == "L" and mode == "RGBA" and "transparency" in self.info:
-            from PIL import ImagePalette
-            self.mode = "P"
-            bytePalette = bytes(bytearray([i//3 for i in range(768)]))
-            self.palette = ImagePalette.raw("RGB", bytePalette)
-            self.palette.dirty = 1
-            self.load()
-
+        # Use transparent conversion to promote from transparent color to an alpha channel.
+        if self.mode in ("L", "RGB") and mode == "RGBA" and "transparency" in self.info:
+            return self._new(self.im.convert_transparent(mode, self.info['transparency']))
+            
         try:
             im = self.im.convert(mode, dither)
         except ValueError:
@@ -1131,14 +1128,16 @@ class Image:
         """
         Maps this image through a lookup table or function.
 
-        :param lut: A lookup table, containing 256 values per band in the
-           image. A function can be used instead, it should take a single
-           argument. The function is called once for each possible pixel
-           value, and the resulting table is applied to all bands of the
-           image.
+        :param lut: A lookup table, containing 256 (or 65336 if
+           self.mode=="I" and mode == "L") values per band in the
+           image.  A function can be used instead, it should take a
+           single argument. The function is called once for each
+           possible pixel value, and the resulting table is applied to
+           all bands of the image.
         :param mode: Output mode (default is same as input).  In the
            current version, this can only be used if the source image
-           has mode "L" or "P", and the output has mode "1".
+           has mode "L" or "P", and the output has mode "1" or the
+           source image mode is "I" and the output mode is "L".
         :returns: An :py:class:`~PIL.Image.Image` object.
         """
 
@@ -1147,10 +1146,12 @@ class Image:
         if isinstance(lut, ImagePointHandler):
             return lut.point(self)
 
-        if not isinstance(lut, collections.Sequence):
+        if callable(lut):
             # if it isn't a list, it should be a function
             if self.mode in ("I", "I;16", "F"):
                 # check if the function can be used with point_transform
+                # UNDONE wiredfool -- I think this prevents us from ever doing
+                # a gamma function point transform on > 8bit images. 
                 scale, offset = _getscaleoffset(lut)
                 return self._new(self.im.point_transform(scale, offset))
             # for other modes, convert the function to a table

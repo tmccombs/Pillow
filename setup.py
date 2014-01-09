@@ -37,7 +37,10 @@ _LIB_IMAGING = (
 
 
 def _add_directory(path, dir, where=None):
-    if dir and os.path.isdir(dir) and dir not in path:
+    if dir is None:
+        return
+    dir = os.path.realpath(dir)
+    if os.path.isdir(dir) and dir not in path:
         if where is None:
             path.append(dir)
         else:
@@ -82,7 +85,7 @@ except ImportError:
 
 
 NAME = 'Pillow'
-VERSION = '2.2.1'
+VERSION = '2.3.0'
 TCL_ROOT = None
 JPEG_ROOT = None
 ZLIB_ROOT = None
@@ -156,6 +159,30 @@ class pil_build_ext(build_ext):
             _add_directory(library_dirs, lib_root)
             _add_directory(include_dirs, include_root)
 
+        # respect CFLAGS/LDFLAGS
+        for k in ('CFLAGS', 'LDFLAGS'):
+            if k in os.environ:
+                for match in re.finditer(r'-I([^\s]+)', os.environ[k]):
+                    _add_directory(include_dirs, match.group(1))
+                for match in re.finditer(r'-L([^\s]+)', os.environ[k]):
+                    _add_directory(library_dirs, match.group(1))
+
+        # include, rpath, if set as environment variables:
+        for k in ('C_INCLUDE_PATH', 'CPATH', 'INCLUDE'):
+            if k in os.environ:
+                for d in os.environ[k].split(os.path.pathsep):
+                    _add_directory(include_dirs, d)
+
+        for k in ('LD_RUN_PATH', 'LIBRARY_PATH', 'LIB'):
+            if k in os.environ:
+                for d in os.environ[k].split(os.path.pathsep):
+                    _add_directory(library_dirs, d)
+
+        prefix = sysconfig.get_config_var("prefix")
+        if prefix:
+            _add_directory(library_dirs, os.path.join(prefix, "lib"))
+            _add_directory(include_dirs, os.path.join(prefix, "include"))
+
         #
         # add platform directories
 
@@ -174,9 +201,7 @@ class pil_build_ext(build_ext):
             # darwin ports installation directories
             _add_directory(library_dirs, "/opt/local/lib")
             _add_directory(include_dirs, "/opt/local/include")
-            # freetype2 ships with X11
-            _add_directory(library_dirs, "/usr/X11/lib")
-            _add_directory(include_dirs, "/usr/X11/include")
+            
             # if homebrew is installed, use its lib and include directories
             import subprocess
             try:
@@ -185,9 +210,17 @@ class pil_build_ext(build_ext):
                     prefix = prefix.strip()
                     _add_directory(library_dirs, os.path.join(prefix, 'lib'))
                     _add_directory(include_dirs, os.path.join(prefix, 'include'))
+                    
+                    # freetype2 is a key-only brew under opt/
+                    _add_directory(library_dirs, os.path.join(prefix, 'opt', 'freetype', 'lib'))
+                    _add_directory(include_dirs, os.path.join(prefix, 'opt', 'freetype', 'include'))
             except:
                 pass # homebrew not installed
-                    
+            
+            # freetype2 ships with X11 (after homebrew, so that homebrew freetype is preferred)
+            _add_directory(library_dirs, "/usr/X11/lib")
+            _add_directory(include_dirs, "/usr/X11/include")
+
         elif sys.platform.startswith("linux"):
             for platform_ in (plat.processor(), plat.architecture()[0]):
 
@@ -202,6 +235,29 @@ class pil_build_ext(build_ext):
                 elif platform_ in ["i386", "i686", "32bit"]:
                     _add_directory(library_dirs, "/usr/lib/i386-linux-gnu")
                     break
+                elif platform_ in ["aarch64"]:
+                    _add_directory(library_dirs, "/usr/lib64")
+                    _add_directory(library_dirs, "/usr/lib/aarch64-linux-gnu")
+                    break
+                elif platform_ in ["arm", "armv7l"]:
+                    _add_directory(library_dirs, "/usr/lib/arm-linux-gnueabi")
+                    break
+                elif platform_ in ["ppc64"]:
+                    _add_directory(library_dirs, "/usr/lib64")
+                    _add_directory(library_dirs, "/usr/lib/ppc64-linux-gnu")
+                    _add_directory(library_dirs, "/usr/lib/powerpc64-linux-gnu")
+                    break
+                elif platform_ in ["ppc"]:
+                    _add_directory(library_dirs, "/usr/lib/ppc-linux-gnu")
+                    _add_directory(library_dirs, "/usr/lib/powerpc-linux-gnu")
+                    break
+                elif platform_ in ["s390x"]:
+                    _add_directory(library_dirs, "/usr/lib64")
+                    _add_directory(library_dirs, "/usr/lib/s390x-linux-gnu")
+                    break
+                elif platform_ in ["s390"]:
+                    _add_directory(library_dirs, "/usr/lib/s390-linux-gnu")
+                    break
             else:
                 raise ValueError(
                     "Unable to identify Linux platform: `%s`" % platform_)
@@ -211,32 +267,11 @@ class pil_build_ext(build_ext):
             # work ;-)
             self.add_multiarch_paths()
 
-        _add_directory(library_dirs, "/usr/local/lib")
+        elif sys.platform.startswith("netbsd"):
+                    _add_directory(library_dirs, "/usr/pkg/lib")
+                    _add_directory(include_dirs, "/usr/pkg/include")
+
         # FIXME: check /opt/stuff directories here?
-
-        # respect CFLAGS/LDFLAGS
-        for k in ('CFLAGS', 'LDFLAGS'):
-            if k in os.environ:
-                for match in re.finditer(r'-I([^\s]+)', os.environ[k]):
-                    _add_directory(include_dirs, match.group(1))
-                for match in re.finditer(r'-L([^\s]+)', os.environ[k]):
-                    _add_directory(library_dirs, match.group(1))
-
-        # include, rpath, if set as environment variables:
-        for k in ('C_INCLUDE_PATH', 'INCLUDE'):
-            if k in os.environ:
-                for d in os.environ[k].split(os.path.pathsep):
-                    _add_directory(include_dirs, d)
-
-        for k in ('LD_RUN_PATH', 'LIBRARY_PATH', 'LIB'):
-            if k in os.environ:
-                for d in os.environ[k].split(os.path.pathsep):
-                    _add_directory(library_dirs, d)
-
-        prefix = sysconfig.get_config_var("prefix")
-        if prefix:
-            _add_directory(library_dirs, os.path.join(prefix, "lib"))
-            _add_directory(include_dirs, os.path.join(prefix, "include"))
 
         #
         # locate tkinter libraries
@@ -500,7 +535,7 @@ class pil_build_ext(build_ext):
             (feature.tcl and feature.tk, "TKINTER"),
             (feature.jpeg, "JPEG"),
             (feature.zlib, "ZLIB (PNG/ZIP)"),
-            (feature.tiff, "TIFF G3/G4 (experimental)"),
+            (feature.tiff, "LIBTIFF"),
             (feature.freetype, "FREETYPE2"),
             (feature.lcms, "LITTLECMS2"),
             (feature.webp, "WEBP"),
@@ -583,8 +618,7 @@ setup(
     description='Python Imaging Library (Fork)',
     long_description=(
         _read('README.rst') + b'\n' +
-        _read('CHANGES.rst') + b'\n' +
-        _read('CONTRIBUTORS.rst')).decode('utf-8'),
+        _read('CHANGES.rst')).decode('utf-8'),
     author='Alex Clark (fork author)',
     author_email='aclark@aclark.net',
     url='http://python-imaging.github.io/',

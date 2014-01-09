@@ -8,7 +8,7 @@ Installation
 .. warning:: PIL and Pillow currently cannot co-exist in the same environment.
     If you want to use Pillow, please remove PIL first.
 
-.. note:: Pillow >= 2.0.0 supports Python versions 2.6, 2.7, 3.2, 3.3.
+.. note:: Pillow >= 2.0.0 supports Python versions 2.6, 2.7, 3.2, 3.3, 3.4
 
 .. note:: Pillow < 2.0.0 supports Python versions 2.4, 2.5, 2.6, 2.7.
 
@@ -60,9 +60,13 @@ Many of Pillow's features require external libraries:
 
 * **littlecms** provides color management
 
+  * Pillow version 2.2.1 and below uses liblcms1, Pillow 2.3.0 and
+    above uses liblcms2. Tested with **1.19** and **2.2**.
+
 * **libwebp** provides the Webp format.
 
-  * Pillow has been tested with version **0.1.3**, which does not read transparent webp files. Version **0.3.0** supports transparency.
+  * Pillow has been tested with version **0.1.3**, which does not read
+    transparent webp files. Version **0.3.0** supports transparency.
 
 * **tcl/tk** provides support for tkinter bitmap and photo images. 
 
@@ -98,16 +102,26 @@ Or for Python 3::
 
     $ sudo apt-get install python3-dev python3-setuptools
 
+In Fedora, the command is::
+    
+    $ sudo yum install python-devel
+
 Prerequisites are installed on **Ubuntu 10.04 LTS** with::
 
     $ sudo apt-get install libtiff4-dev libjpeg62-dev zlib1g-dev \
-        libfreetype6-dev liblcms1-dev tcl8.5-dev tk8.5-dev
+        libfreetype6-dev tcl8.5-dev tk8.5-dev
 
 Prerequisites are installed with on **Ubuntu 12.04 LTS** or **Raspian Wheezy
 7.0** with::
 
     $ sudo apt-get install libtiff4-dev libjpeg8-dev zlib1g-dev \
-        libfreetype6-dev liblcms1-dev libwebp-dev tcl8.5-dev tk8.5-dev
+        libfreetype6-dev liblcms2-dev libwebp-dev tcl8.5-dev tk8.5-dev
+
+Prerequisites are installed on **Fedora 20** with::
+
+    $ sudo yum install libtiff-devel libjpeg-devel libzip-devel freetype-devel \
+        lcms2-devel libwebp-devel tcl-devel tk-devel
+
 
 Mac OS X installation
 ---------------------
